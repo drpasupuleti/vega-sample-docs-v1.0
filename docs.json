@@ -1,6 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "name": "Vega Sample Package",
+  "theme": "mint",
   "navigation": [
     {
       "group": "Vega Sample Package",
