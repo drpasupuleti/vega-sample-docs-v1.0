@@ -1,18 +1,19 @@
 ---
 title: "Vega Sample Package"
-description: "A reference implementation for Vega OS Content Launcher and Media Controls APIs"
+description: "A reference implementation for Vega OS Content Launcher and Media Controls APIs using React Native and TypeScript."
+icon: "rocket"
 ---
 
-The **vega-sample-package** is a TypeScript reference implementation demonstrating two core Vega OS APIs
-for Fire TV app developers. Use it as a starting point for integrating content discovery and media
-playback controls into your app.
+## Overview
+
+The `vega-sample-package` is a TypeScript reference implementation demonstrating two core Vega OS APIs for Fire TV app development:
 
 <Columns cols={2}>
-  <Card title="Content Launcher API" icon="rocket" href="/content-launcher">
+  <Card title="Content Launcher API" icon="play" href="/content-launcher">
     Integrate with the Fire TV home launcher and Alexa voice commands for content search and playback.
   </Card>
-  <Card title="Media Controls API" icon="circle-play" href="/media-controls">
-    Support remote, voice, and touch input modalities for controlling media playback.
+  <Card title="Media Controls API" icon="sliders" href="/media-controls">
+    Support diverse input modalities (remote, voice, touch) for media control on Vega OS devices.
   </Card>
 </Columns>
 
@@ -27,7 +28,7 @@ playback controls into your app.
   <Step title="Import the APIs">
     ```typescript
     import { handleLaunchContent, EntityType } from 'vega-sample-package';
-    import { SessionManager, PlaybackState } from 'vega-sample-package';
+    import { SessionManager, EndpointDiscovery } from 'vega-sample-package';
     ```
   </Step>
   <Step title="Handle a content launch request">
@@ -45,33 +46,55 @@ playback controls into your app.
   </Step>
   <Step title="Create a media session">
     ```typescript
-    const manager = new SessionManager();
+    import { SessionManager, PlaybackState } from 'vega-sample-package';
 
+    const manager = new SessionManager();
     const session = manager.createSession({
       title: 'My Video',
       playbackState: PlaybackState.PLAYING,
       supportedControls: ['play', 'pause', 'stop', 'seek'],
       capabilities: {
-        canSeek: true, canSkipForward: true, canSkipBackward: true,
+        canSeek: true, canSkipForward: false, canSkipBackward: false,
         canFastForward: false, canRewind: false, canSetPlaybackSpeed: false,
       },
       positionMs: 0,
-      durationMs: 3600000,
+      durationMs: 120000,
     });
     ```
   </Step>
 </Steps>
 
-## Package Info
+## Package Details
 
 | Property | Value |
 |----------|-------|
 | Version | `0.1.0` |
-| License | MIT |
 | Language | TypeScript (strict mode) |
-| Platform | React Native / Fire TV |
+| Platform | React Native / Vega OS |
+| License | MIT |
 
 <Info>
-  This package is intended as a reference implementation for documentation and learning purposes.
-  Adapt the patterns shown here to your own app's architecture.
+  This package is intended as a reference implementation and documentation input. It demonstrates API patterns for building Fire TV apps on Vega OS.
 </Info>
+
+## Project Structure
+
+```
+vega-sample-package/
+├── src/
+│   ├── index.ts                          # Package entry point
+│   ├── content-launcher/
+│   │   ├── types.ts                      # Content Launcher type definitions
+│   │   ├── content-launcher.ts           # Core processing logic
+│   │   └── examples/
+│   │       └── launch-content-example.ts # Usage examples
+│   └── media-controls/
+│       ├── types.ts                      # Media Controls type definitions
+│       ├── session-manager.ts            # Session lifecycle management
+│       ├── discovery.ts                  # Endpoint discovery registry
+│       └── examples/
+│           ├── media-handler-example.ts  # Handler implementation example
+│           └── pip-example.ts            # Picture-in-picture example
+├── package.json
+└── tsconfig.json
+```
