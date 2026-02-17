@@ -1,0 +1,127 @@
+---
+title: "Endpoint Discovery"
+description: "Registry for discovering integrated media provider apps and their sessions"
+icon: "search"
+---
+
+# EndpointDiscovery
+
+The `EndpointDiscovery` class maintains a registry of integrated media provider apps and their active sessions. The platform uses this to enumerate available media endpoints and route control commands to the correct provider.
+
+## Basic Usage
+
+```typescript
+import { EndpointDiscovery } from 'vega-sample-package';
+
+const discovery = new EndpointDiscovery();
+
+// Register a media provider app
+discovery.registerApp('com.example.player', 'Example Player');
+
+// Associate a session with the app
+discovery.addSessionToEndpoint('com.example.player', 'session-1');
+
+// Query endpoints
+const endpoints = discovery.listEndpoints();
+console.log(endpoints[0].activeSessions); // ['session-1']
+```
+
+## MediaEndpoint
+
+Describes a registered media provider app and its active sessions.
+
+```typescript
+interface MediaEndpoint {
+  appId: string;              // Unique application identifier
+  appName: string;            // Human-readable application name
+  activeSessions: string[];   // List of active session IDs owned by this app
+}
+```
+
+## API Reference
+
+### registerApp
+
+```typescript
+registerApp(appId: string, appName: string): void
+```
+
+Registers a new media provider app with an empty active sessions list. If an app with the same ID is already registered, it is overwritten.
+
+### unregisterApp
+
+```typescript
+unregisterApp(appId: string): void
+```
+
+Removes an app from the registry. Idempotent — calling with an unknown ID is a no-op.
+
+### listEndpoints
+
+```typescript
+listEndpoints(): MediaEndpoint[]
+```
+
+Returns all currently registered media provider endpoints.
+
+### getEndpoint
+
+```typescript
+getEndpoint(appId: string): MediaEndpoint | undefined
+```
+
+Retrieves a specific endpoint by application ID. Returns `undefined` if not found.
+
+### addSessionToEndpoint
+
+```typescript
+addSessionToEndpoint(appId: string, sessionId: string): void
+```
+
+Adds a session ID to an endpoint's active sessions list. No-op if the app ID is not registered. Duplicate session IDs are not added.
+
+### removeSessionFromEndpoint
+
+```typescript
+removeSessionFromEndpoint(appId: string, sessionId: string): void
+```
+
+Removes a session ID from an endpoint's active sessions list. No-op if the app or session is not found.
+
+## Combining with SessionManager
+
+`EndpointDiscovery` works alongside `SessionManager` to provide a complete picture of which apps own which sessions:
+
+```typescript
+import { SessionManager, EndpointDiscovery, PlaybackState } from 'vega-sample-package';
+
+const manager = new SessionManager();
+const discovery = new EndpointDiscovery();
+
+// Register app and create session
+discovery.registerApp('com.example.streaming', 'Example Streaming');
+
+const session = manager.createSession({
+  title: 'Documentary',
+  playbackState: PlaybackState.PLAYING,
+  supportedControls: ['play', 'pause', 'stop'],
+  capabilities: {
+    canSeek: true, canSkipForward: false, canSkipBackward: false,
+    canFastForward: false, canRewind: false, canSetPlaybackSpeed: false,
+  },
+  positionMs: 0,
+  durationMs: 5400000,
+});
+
+// Link session to app endpoint
+discovery.addSessionToEndpoint('com.example.streaming', session.sessionId);
+
+// Query: which app owns which sessions?
+for (const ep of discovery.listEndpoints()) {
+  console.log(`${ep.appName}: ${ep.activeSessions.join(', ')}`);
+}
+```
+
+<Tip>
+  Always clean up by calling `removeSessionFromEndpoint` before `destroySession` to keep the endpoint registry in sync with the session manager.
+</Tip>

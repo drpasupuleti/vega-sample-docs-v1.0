@@ -1,77 +1,67 @@
 ---
-title: "Vega Sample Package"
-description: "A reference implementation for Vega OS Content Launcher and Media Controls APIs"
+title: "Introduction"
+description: "A reference implementation for the Vega OS Content Launcher and Media Controls APIs"
+icon: "rocket"
 ---
 
-The **vega-sample-package** is a TypeScript reference implementation demonstrating two core Vega OS APIs
-for Fire TV app developers. Use it as a starting point for integrating content discovery and media
-playback controls into your app.
+# Vega Sample Package
+
+A TypeScript reference implementation demonstrating two core Vega OS APIs for Fire TV app development.
 
 <Columns cols={2}>
-  <Card title="Content Launcher API" icon="rocket" href="/content-launcher">
+  <Card title="Content Launcher API" icon="play" href="/content-launcher/overview">
     Integrate with the Fire TV home launcher and Alexa voice commands for content search and playback.
   </Card>
-  <Card title="Media Controls API" icon="circle-play" href="/media-controls">
-    Support remote, voice, and touch input modalities for controlling media playback.
+  <Card title="Media Controls API" icon="sliders-horizontal" href="/media-controls/overview">
+    Handle diverse input modalities (remote, voice, touch) for media control on Vega OS devices.
   </Card>
 </Columns>
 
-## Quick Start
+## What's Inside
 
-<Steps>
-  <Step title="Install the package">
-    ```bash
-    npm install vega-sample-package
-    ```
-  </Step>
-  <Step title="Import the APIs">
-    ```typescript
-    import { handleLaunchContent, EntityType } from 'vega-sample-package';
-    import { SessionManager, PlaybackState } from 'vega-sample-package';
-    ```
-  </Step>
-  <Step title="Handle a content launch request">
-    ```typescript
-    const search = {
-      entities: [
-        { type: EntityType.VIDEO, externalIdList: [{ name: 'amzn_id', value: '1700000725' }] },
-      ],
-      searchKeyword: 'Seabound',
-    };
+This package provides:
 
-    const payload = handleLaunchContent(search, true, {});
-    console.log(payload.launchIntent); // "play"
-    ```
-  </Step>
-  <Step title="Create a media session">
-    ```typescript
-    const manager = new SessionManager();
+- **Type definitions** for both APIs with full TSDoc annotations
+- **Processing logic** for content launch requests from Fire TV and Alexa
+- **Session management** for media playback lifecycle
+- **Endpoint discovery** for registering and querying media provider apps
+- **Example modules** covering real-world integration scenarios
 
-    const session = manager.createSession({
-      title: 'My Video',
-      playbackState: PlaybackState.PLAYING,
-      supportedControls: ['play', 'pause', 'stop', 'seek'],
-      capabilities: {
-        canSeek: true, canSkipForward: true, canSkipBackward: true,
-        canFastForward: false, canRewind: false, canSetPlaybackSpeed: false,
-      },
-      positionMs: 0,
-      durationMs: 3600000,
-    });
-    ```
-  </Step>
-</Steps>
+<Note>
+  This package is intended as a reference implementation and documentation generation input.
+  It is not a production runtime dependency.
+</Note>
 
-## Package Info
+## Tech Stack
 
-| Property | Value |
-|----------|-------|
-| Version | `0.1.0` |
-| License | MIT |
-| Language | TypeScript (strict mode) |
-| Platform | React Native / Fire TV |
+| Tool | Purpose |
+|------|---------|
+| TypeScript 5.3+ | Strict mode, full type safety |
+| Jest + ts-jest | Unit testing |
+| fast-check | Property-based testing |
+| ESLint | Static analysis |
 
-<Info>
-  This package is intended as a reference implementation for documentation and learning purposes.
-  Adapt the patterns shown here to your own app's architecture.
-</Info>
+## Package Structure
+
+```
+vega-sample-package/
+├── src/
+│   ├── index.ts                    # Re-exports both modules
+│   ├── content-launcher/
+│   │   ├── types.ts                # Content Launcher type definitions
+│   │   ├── content-launcher.ts     # Core processing logic
+│   │   ├── index.ts                # Module re-exports
+│   │   └── examples/
+│   │       └── launch-content-example.ts
+│   └── media-controls/
+│       ├── types.ts                # Media Controls type definitions
+│       ├── session-manager.ts      # Session lifecycle management
+│       ├── discovery.ts            # Endpoint discovery registry
+│       ├── index.ts                # Module re-exports
+│       └── examples/
+│           ├── media-handler-example.ts
+│           └── pip-example.ts
+├── package.json
+├── tsconfig.json
+└── jest.config.js
+```

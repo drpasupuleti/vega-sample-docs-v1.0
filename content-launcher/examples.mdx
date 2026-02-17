@@ -1,0 +1,97 @@
+---
+title: "Content Launcher Examples"
+description: "Real-world integration scenarios for the Content Launcher API"
+icon: "code"
+---
+
+# Content Launcher Examples
+
+These examples demonstrate how to process incoming launch requests from the Fire TV launcher or Alexa voice commands.
+
+## Scenario 1: "Alexa, Watch Seabound"
+
+Direct playback — `autoPlay=true`, `amzn_id` present, no EPISODE entity → intent is `"play"`.
+
+```typescript
+import {
+  EntityType,
+  type IContentSearch,
+  handleLaunchContent,
+} from 'vega-sample-package';
+
+const search: IContentSearch = {
+  entities: [
+    {
+      type: EntityType.VIDEO,
+      externalIdList: [{ name: 'amzn_id', value: '1700000725' }],
+    },
+  ],
+  searchKeyword: 'Seabound',
+};
+
+const payload = handleLaunchContent(search, true, { brandName: 'StreamCo' });
+// payload.launchIntent === 'play'
+// payload.amzn_id === '1700000725'
+```
+
+## Scenario 2: "Alexa, Find Seabound"
+
+Search results — `autoPlay=false` → intent is always `"search"`.
+
+```typescript
+const payload = handleLaunchContent(search, false, {});
+// payload.launchIntent === 'search'
+```
+
+## Scenario 3: "Alexa, Play Season 1 Episode 5 from The SeaShow"
+
+Episodic playback — `autoPlay=true`, `amzn_id` present, EPISODE + SEASON entities → `"playshow"`.
+
+```typescript
+const episodicSearch: IContentSearch = {
+  entities: [
+    {
+      type: EntityType.VIDEO,
+      externalIdList: [{ name: 'amzn_id', value: '1700000123' }],
+    },
+    { type: EntityType.EPISODE, value: '5', externalIdList: [] },
+    { type: EntityType.SEASON, value: '1', externalIdList: [] },
+  ],
+  searchKeyword: 'The SeaShow season one episode five',
+};
+
+const payload = handleLaunchContent(episodicSearch, true, {});
+// payload.launchIntent === 'playshow'
+// payload.episodeNumber === 5
+// payload.seasonNumber === 1
+```
+
+## Scenario 4: "Alexa, Find comedy movies"
+
+Genre-based search — `autoPlay=false`, no `amzn_id` → intent is `"search"`.
+
+```typescript
+const genreSearch: IContentSearch = {
+  entities: [
+    { type: EntityType.GENRE, externalIdList: [] },
+  ],
+  searchKeyword: 'comedy movies',
+};
+
+const payload = handleLaunchContent(genreSearch, false, {});
+// payload.launchIntent === 'search'
+```
+
+## Serialization Round-Trip
+
+```typescript
+import { serializePayload, deserializePayload } from 'vega-sample-package';
+
+const json = serializePayload(payload);
+const restored = deserializePayload(json);
+// restored is identical to the original payload
+```
+
+<Info>
+  `serializePayload` converts `undefined` fields to `null` in JSON, and `deserializePayload` restores them back to `undefined`, ensuring lossless round-trips.
+</Info>

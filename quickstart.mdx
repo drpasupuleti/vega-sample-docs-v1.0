@@ -1,0 +1,97 @@
+---
+title: "Quickstart"
+description: "Get up and running with the Vega Sample Package in minutes"
+icon: "bolt"
+---
+
+## Installation
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/drpasupuleti/vega-sample-package.git
+    cd vega-sample-package
+    ```
+  </Step>
+  <Step title="Install dependencies">
+    ```bash
+    npm install
+    ```
+  </Step>
+  <Step title="Build the project">
+    ```bash
+    npm run build
+    ```
+    This compiles TypeScript to `dist/` with declaration files and source maps.
+  </Step>
+  <Step title="Run tests">
+    ```bash
+    npm test
+    ```
+  </Step>
+</Steps>
+
+## Available Scripts
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| `build` | `tsc` | Compile TypeScript to `dist/` |
+| `lint` | `eslint 'src/**/*.ts'` | Run ESLint on all source files |
+| `test` | `jest` | Run unit and property-based tests |
+| `typecheck` | `tsc --noEmit` | Type-check without emitting files |
+
+## Quick Usage
+
+<Tabs>
+  <Tab title="Content Launcher">
+    ```typescript
+    import {
+      handleLaunchContent,
+      EntityType,
+      type IContentSearch,
+    } from 'vega-sample-package';
+
+    const search: IContentSearch = {
+      entities: [
+        {
+          type: EntityType.VIDEO,
+          externalIdList: [{ name: 'amzn_id', value: '1700000725' }],
+        },
+      ],
+      searchKeyword: 'Seabound',
+    };
+
+    const payload = handleLaunchContent(search, true, {});
+    console.log(payload.launchIntent); // "play"
+    console.log(payload.amzn_id);      // "1700000725"
+    ```
+  </Tab>
+  <Tab title="Media Controls">
+    ```typescript
+    import {
+      SessionManager,
+      PlaybackState,
+    } from 'vega-sample-package';
+
+    const manager = new SessionManager();
+
+    const session = manager.createSession({
+      title: 'My Video',
+      playbackState: PlaybackState.PLAYING,
+      supportedControls: ['play', 'pause', 'stop'],
+      capabilities: {
+        canSeek: true,
+        canSkipForward: false,
+        canSkipBackward: false,
+        canFastForward: false,
+        canRewind: false,
+        canSetPlaybackSpeed: false,
+      },
+      positionMs: 0,
+      durationMs: 120000,
+    });
+
+    console.log(session.sessionId); // "session-1"
+    ```
+  </Tab>
+</Tabs>

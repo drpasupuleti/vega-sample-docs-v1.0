@@ -1,0 +1,53 @@
+---
+title: "Content Launcher Overview"
+description: "Integrate with Fire TV home launcher and Alexa voice commands for content search and playback"
+icon: "play"
+---
+
+# Content Launcher API
+
+The Content Launcher API enables Vega apps to integrate with the Fire TV home launcher and Alexa voice commands. Users can search for and play content directly through these interfaces.
+
+## How It Works
+
+<Steps>
+  <Step title="Receive a launch request">
+    The Fire TV launcher or Alexa sends an `IContentSearch` payload containing entities and an optional search keyword.
+  </Step>
+  <Step title="Extract identifiers">
+    The `handleLaunchContent` function parses entities to extract the `amzn_id` from external ID lists.
+  </Step>
+  <Step title="Determine intent">
+    Based on the `autoPlay` flag, presence of `amzn_id`, and entity types, the function resolves a `LaunchIntent`.
+  </Step>
+  <Step title="Build payload">
+    A `ContentLaunchPayload` is returned with the resolved intent, identifiers, and any episodic content info.
+  </Step>
+</Steps>
+
+## Intent Resolution Logic
+
+The `determineIntent` function uses this decision table:
+
+| `autoPlay` | `amzn_id` present | Has EPISODE entity | Result |
+|:---:|:---:|:---:|:---:|
+| `false` | any | any | `"search"` |
+| `true` | yes | yes | `"playshow"` |
+| `true` | yes | no | `"play"` |
+| `true` | no | any | `"search"` |
+
+## Module Exports
+
+```typescript
+// Types
+export { EntityType, LaunchIntent, IExternalId, IContentSearchEntity,
+         IContentSearch, ILaunchContentOptionalFields, ContentLaunchPayload }
+
+// Functions
+export { handleLaunchContent, extractAmznId, determineIntent,
+         serializePayload, deserializePayload }
+```
+
+<Tip>
+  Use `serializePayload` and `deserializePayload` for safe JSON round-tripping of `ContentLaunchPayload` objects. Undefined fields are serialized as `null` and restored on deserialization.
+</Tip>

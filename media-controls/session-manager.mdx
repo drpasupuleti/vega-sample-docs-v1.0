@@ -1,0 +1,119 @@
+---
+title: "SessionManager"
+description: "Lifecycle management for media sessions including creation, updates, destruction, and listeners"
+icon: "layers"
+---
+
+# SessionManager
+
+The `SessionManager` class manages the lifecycle of media sessions. Each session is identified by a unique ID (`session-{counter}`) and maintains independent state and listener sets.
+
+## Creating a Session
+
+```typescript
+import { SessionManager, PlaybackState } from 'vega-sample-package';
+
+const manager = new SessionManager();
+
+const session = manager.createSession({
+  title: 'Planet Earth II',
+  playbackState: PlaybackState.IDLE,
+  supportedControls: ['play', 'pause', 'stop', 'seek'],
+  capabilities: {
+    canSeek: true,
+    canSkipForward: false,
+    canSkipBackward: false,
+    canFastForward: false,
+    canRewind: false,
+    canSetPlaybackSpeed: true,
+  },
+  positionMs: 0,
+  durationMs: 3540000,
+});
+
+console.log(session.sessionId); // "session-1"
+```
+
+## API Reference
+
+### createSession
+
+```typescript
+createSession(metadata: Omit<MediaSession, 'sessionId'>): MediaSession
+```
+
+Creates a new session with an auto-generated ID. Returns the full `MediaSession` object.
+
+### getSession
+
+```typescript
+getSession(sessionId: string): MediaSession | undefined
+```
+
+Retrieves a session by ID. Returns `undefined` if not found.
+
+### updateSession
+
+```typescript
+updateSession(sessionId: string, updates: Partial<MediaSession>): MediaSession
+```
+
+Merges partial updates into an existing session and notifies all registered listeners. The `sessionId` field in updates is ignored to prevent ID mutation.
+
+<Warning>
+  Throws an `Error` if no session exists with the given `sessionId`.
+</Warning>
+
+### destroySession
+
+```typescript
+destroySession(sessionId: string): void
+```
+
+Destroys a session and removes all associated listeners. This operation is idempotent.
+
+### getAllSessions
+
+```typescript
+getAllSessions(): MediaSession[]
+```
+
+Returns all currently active sessions.
+
+### addListener
+
+```typescript
+addListener(sessionId: string, listener: SessionListener): void
+```
+
+Registers a listener to be notified on session state changes.
+
+<Warning>
+  Throws an `Error` if no session exists with the given `sessionId`.
+</Warning>
+
+### removeListener
+
+```typescript
+removeListener(sessionId: string, listener: SessionListener): void
+```
+
+Removes a specific listener from a session. No-op if the listener is not registered.
+
+## Listening for State Changes
+
+```typescript
+manager.addListener(session.sessionId, (updated) => {
+  console.log(`State: ${updated.playbackState}, Position: ${updated.positionMs}ms`);
+});
+
+// This triggers the listener
+manager.updateSession(session.sessionId, {
+  playbackState: PlaybackState.PLAYING,
+  positionMs: 45000,
+});
+```
+
+<Tip>
+  The `SessionManager` supports multiple concurrent sessions, making it suitable for picture-in-picture scenarios where each session operates independently.
+</Tip>

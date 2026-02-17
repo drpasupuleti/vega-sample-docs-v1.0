@@ -1,0 +1,186 @@
+---
+title: "Media Controls Examples"
+description: "Real-world integration scenarios for the Media Controls API"
+icon: "code"
+---
+
+# Media Controls Examples
+
+## Implementing a Media Handler
+
+This example shows how to implement `IMediaControlHandlerAsync`, create a session, respond to control commands, and observe state changes.
+
+<Steps>
+  <Step title="Implement the handler interface">
+    A media provider app implements `IMediaControlHandlerAsync` to react to incoming control commands from the platform.
+
+    ```typescript
+    import {
+      type IMediaControlHandlerAsync,
+      PlaybackState,
+    } from 'vega-sample-package';
+
+    let currentPositionMs = 0;
+    let currentState: PlaybackState = PlaybackState.IDLE;
+    const DURATION_MS = 3_600_000; // 1 hour
+
+    const myHandler: IMediaControlHandlerAsync = {
+      async handlePlay() {
+        currentState = PlaybackState.PLAYING;
+      },
+      async handlePause() {
+        currentState = PlaybackState.PAUSED;
+      },
+      async handleStop() {
+        currentState = PlaybackState.STOPPED;
+        currentPositionMs = 0;
+      },
+      async handleSeek(positionMs: number) {
+        currentPositionMs = Math.min(Math.max(positionMs, 0), DURATION_MS);
+      },
+      async handleNext() { /* advance playlist */ },
+      async handlePrevious() { /* go back in playlist */ },
+      async handleFastForward() { /* increase playback rate */ },
+      async handleRewind() { /* reverse playback */ },
+      async handleSkipForward(intervalMs: number) {
+        currentPositionMs = Math.min(currentPositionMs + intervalMs, DURATION_MS);
+      },
+      async handleSkipBackward(intervalMs: number) {
+        currentPositionMs = Math.max(currentPositionMs - intervalMs, 0);
+      },
+      async handleTogglePlayPause() {
+        currentState = currentState === PlaybackState.PLAYING
+          ? PlaybackState.PAUSED
+          : PlaybackState.PLAYING;
+      },
+      async handleStartOver() {
+        currentPositionMs = 0;
+        currentState = PlaybackState.PLAYING;
+      },
+    };
+    ```
+  </Step>
+  <Step title="Create a session and register a listener">
+    ```typescript
+    import { SessionManager } from 'vega-sample-package';
+
+    const manager = new SessionManager();
+
+    const session = manager.createSession({
+      title: 'Planet Earth II — Mountains',
+      playbackState: PlaybackState.IDLE,
+      supportedControls: ['play', 'pause', 'stop', 'seek', 'skipForward', 'skipBackward'],
+      capabilities: {
+        canSeek: true, canSkipForward: true, canSkipBackward: true,
+        canFastForward: false, canRewind: false, canSetPlaybackSpeed: true,
+      },
+      positionMs: 0,
+      durationMs: DURATION_MS,
+    });
+
+    manager.addListener(session.sessionId, (updated) => {
+      console.log(`State: ${updated.playbackState}, Position: ${updated.positionMs}ms`);
+    });
+    ```
+  </Step>
+  <Step title="Respond to commands and update session state">
+    ```typescript
+    // Play command arrives from remote/voice/touch
+    await myHandler.handlePlay();
+    manager.updateSession(session.sessionId, {
+      playbackState: currentState,
+      positionMs: currentPositionMs,
+    });
+
+    // Skip forward 30 seconds
+    await myHandler.handleSkipForward(30_000);
+    manager.updateSession(session.sessionId, {
+      positionMs: currentPositionMs,
+    });
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Picture-in-Picture (Multi-Session)
+
+This example demonstrates managing two independent sessions for a PiP scenario.
+
+```typescript
+import {
+  PlaybackState,
+  SessionManager,
+  EndpointDiscovery,
+} from 'vega-sample-package';
+
+const manager = new SessionManager();
+const discovery = new EndpointDiscovery();
+
+// Register two media provider apps
+discovery.registerApp('com.example.streaming', 'Example Streaming');
+discovery.registerApp('com.example.sports', 'Example Sports');
+
+// Create primary (full-screen) session
+const primary = manager.createSession({
+  title: 'Documentary — Deep Ocean',
+  playbackState: PlaybackState.PLAYING,
+  supportedControls: ['play', 'pause', 'stop', 'seek', 'skipForward', 'skipBackward'],
+  capabilities: {
+    canSeek: true, canSkipForward: true, canSkipBackward: true,
+    canFastForward: false, canRewind: false, canSetPlaybackSpeed: true,
+  },
+  positionMs: 0,
+  durationMs: 5_400_000,
+});
+
+// Create PiP (overlay) session
+const pip = manager.createSession({
+  title: 'Live — Championship Finals',
+  playbackState: PlaybackState.PLAYING,
+  supportedControls: ['play', 'pause', 'stop'],
+  capabilities: {
+    canSeek: false, canSkipForward: false, canSkipBackward: false,
+    canFastForward: false, canRewind: false, canSetPlaybackSpeed: false,
+  },
+  positionMs: 0,
+  durationMs: 7_200_000,
+});
+
+// Link sessions to their app endpoints
+discovery.addSessionToEndpoint('com.example.streaming', primary.sessionId);
+discovery.addSessionToEndpoint('com.example.sports', pip.sessionId);
+```
+
+<Info>
+  Each session maintains independent state and listener sets. Updating the primary session does not affect the PiP session, and vice versa.
+</Info>
+
+```typescript
+// Advance primary — PiP is unaffected
+manager.updateSession(primary.sessionId, { positionMs: 120_000 });
+
+// Pause PiP — primary is unaffected
+manager.updateSession(pip.sessionId, { playbackState: PlaybackState.PAUSED });
+
+// Verify independence
+const primaryState = manager.getSession(primary.sessionId);
+const pipState = manager.getSession(pip.sessionId);
+console.log(primaryState?.playbackState); // "playing"
+console.log(pipState?.playbackState);     // "paused"
+```
+
+### Cleanup
+
+```typescript
+// Remove sessions from endpoints, then destroy
+discovery.removeSessionFromEndpoint('com.example.sports', pip.sessionId);
+manager.destroySession(pip.sessionId);
+
+discovery.removeSessionFromEndpoint('com.example.streaming', primary.sessionId);
+manager.destroySession(primary.sessionId);
+
+// Unregister apps
+discovery.unregisterApp('com.example.streaming');
+discovery.unregisterApp('com.example.sports');
+```

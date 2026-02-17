@@ -1,0 +1,57 @@
+---
+title: "Media Controls Overview"
+description: "Integrate diverse input modalities for media control on Vega OS devices"
+icon: "sliders-horizontal"
+---
+
+# Media Controls API
+
+The Media Controls API provides functionality for integrating diverse input modalities — remote control, voice commands, and touch — for media control on Vega OS devices.
+
+## Architecture
+
+<Columns cols={3}>
+  <Card title="Session Manager" icon="layers" href="/media-controls/session-manager">
+    Lifecycle management for media sessions: create, update, destroy, and listen for state changes.
+  </Card>
+  <Card title="Endpoint Discovery" icon="search" href="/media-controls/endpoint-discovery">
+    Registry for media provider apps and their active sessions.
+  </Card>
+  <Card title="Types & Interfaces" icon="braces" href="/media-controls/types">
+    Playback states, capabilities, control interfaces, and session metadata.
+  </Card>
+</Columns>
+
+## Key Concepts
+
+<AccordionGroup>
+  <Accordion title="Media Sessions">
+    A `MediaSession` represents an active media playback instance. Each session tracks its title, playback state, position, duration, supported controls, and capabilities. Sessions are created and managed through the `SessionManager`.
+  </Accordion>
+  <Accordion title="Client vs Handler">
+    The API defines two complementary interfaces:
+    - **`IMediaControlClientAsync`** — Used by the platform (remote, voice, touch) to dispatch commands to a media provider app.
+    - **`IMediaControlHandlerAsync`** — Implemented by the media provider app to respond to incoming control commands.
+  </Accordion>
+  <Accordion title="Endpoint Discovery">
+    `EndpointDiscovery` maintains a registry of integrated media provider apps. The platform uses this to enumerate available endpoints and route control commands to the correct provider.
+  </Accordion>
+  <Accordion title="Multi-Session Support">
+    The `SessionManager` supports multiple concurrent sessions, enabling scenarios like picture-in-picture where a primary (full-screen) session and a secondary (overlay) session operate independently.
+  </Accordion>
+</AccordionGroup>
+
+## Module Exports
+
+```typescript
+// Enums
+export { PlaybackState, RepeatMode }
+
+// Types
+export { SupportedControl, MediaSessionCapabilities, MediaSession,
+         IMediaControlClientAsync, IMediaControlHandlerAsync, SessionListener }
+
+// Classes
+export { SessionManager }
+export { EndpointDiscovery, MediaEndpoint }
+```

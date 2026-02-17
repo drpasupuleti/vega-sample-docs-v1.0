@@ -1,0 +1,138 @@
+---
+title: "Media Controls Types"
+description: "Type definitions for playback states, capabilities, sessions, and control interfaces"
+icon: "braces"
+---
+
+# Media Controls Types
+
+## PlaybackState
+
+Represents the current state of media playback within a `MediaSession`.
+
+```typescript
+enum PlaybackState {
+  IDLE      = 'idle',       // No media loaded
+  PLAYING   = 'playing',    // Actively playing
+  PAUSED    = 'paused',     // Playback paused
+  BUFFERING = 'buffering',  // Loading/buffering
+  STOPPED   = 'stopped',    // Playback stopped
+}
+```
+
+## RepeatMode
+
+Controls how the player handles playback at the end of a track or playlist.
+
+```typescript
+enum RepeatMode {
+  OFF = 'off',  // No repeat
+  ONE = 'one',  // Repeat current track
+  ALL = 'all',  // Repeat entire playlist
+}
+```
+
+## SupportedControl
+
+The set of media control actions a session may support. Each value corresponds to a method on `IMediaControlClientAsync`.
+
+```typescript
+type SupportedControl =
+  | 'play' | 'pause' | 'stop' | 'seek'
+  | 'next' | 'previous'
+  | 'fastForward' | 'rewind'
+  | 'skipForward' | 'skipBackward'
+  | 'togglePlayPause' | 'startOver';
+```
+
+## MediaSessionCapabilities
+
+Capability flags describing what a media session can do. These allow the platform to adapt its UI and voice-command routing.
+
+```typescript
+interface MediaSessionCapabilities {
+  canSeek: boolean;              // Supports seeking to arbitrary position
+  canSkipForward: boolean;       // Supports skip forward by interval
+  canSkipBackward: boolean;      // Supports skip backward by interval
+  canFastForward: boolean;       // Supports fast-forward playback
+  canRewind: boolean;            // Supports rewind playback
+  canSetPlaybackSpeed: boolean;  // Supports changing playback speed
+}
+```
+
+## MediaSession
+
+Metadata and state for a currently active media session.
+
+```typescript
+interface MediaSession {
+  sessionId: string;                       // Unique session identifier
+  title: string;                           // Title of the media
+  playbackState: PlaybackState;            // Current playback state
+  supportedControls: SupportedControl[];   // Supported control actions
+  capabilities: MediaSessionCapabilities;  // Capability flags
+  positionMs: number;                      // Current position in ms
+  durationMs: number;                      // Total duration in ms
+}
+```
+
+## IMediaControlClientAsync
+
+Client-side interface for sending media control commands to a session. Used by the platform (remote, voice, touch) to dispatch commands.
+
+<Accordion title="Full interface definition">
+```typescript
+interface IMediaControlClientAsync {
+  play(sessionId: string): Promise<void>;
+  pause(sessionId: string): Promise<void>;
+  stop(sessionId: string): Promise<void>;
+  seek(sessionId: string, positionMs: number): Promise<void>;
+  next(sessionId: string): Promise<void>;
+  previous(sessionId: string): Promise<void>;
+  fastForward(sessionId: string): Promise<void>;
+  rewind(sessionId: string): Promise<void>;
+  skipForward(sessionId: string, intervalMs: number): Promise<void>;
+  skipBackward(sessionId: string, intervalMs: number): Promise<void>;
+  togglePlayPause(sessionId: string): Promise<void>;
+  startOver(sessionId: string): Promise<void>;
+  setAudioVolume(sessionId: string, volume: number): Promise<void>;
+  setAudioTrack(sessionId: string, trackId: string): Promise<void>;
+  enableShuffle(sessionId: string, enabled: boolean): Promise<void>;
+  setRepeatMode(sessionId: string, mode: RepeatMode): Promise<void>;
+  setPlaybackSpeed(sessionId: string, speed: number): Promise<void>;
+  enableTextTrack(sessionId: string, trackId: string): Promise<void>;
+  disableTextTrack(sessionId: string): Promise<void>;
+}
+```
+</Accordion>
+
+## IMediaControlHandlerAsync
+
+Handler interface that media provider apps implement to respond to incoming control commands.
+
+<Accordion title="Full interface definition">
+```typescript
+interface IMediaControlHandlerAsync {
+  handlePlay(): Promise<void>;
+  handlePause(): Promise<void>;
+  handleStop(): Promise<void>;
+  handleSeek(positionMs: number): Promise<void>;
+  handleNext(): Promise<void>;
+  handlePrevious(): Promise<void>;
+  handleFastForward(): Promise<void>;
+  handleRewind(): Promise<void>;
+  handleSkipForward(intervalMs: number): Promise<void>;
+  handleSkipBackward(intervalMs: number): Promise<void>;
+  handleTogglePlayPause(): Promise<void>;
+  handleStartOver(): Promise<void>;
+}
+```
+</Accordion>
+
+## SessionListener
+
+Callback type for monitoring media session state changes.
+
+```typescript
+type SessionListener = (session: MediaSession) => void;
+```

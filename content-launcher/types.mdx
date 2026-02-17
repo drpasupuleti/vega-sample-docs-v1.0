@@ -1,0 +1,123 @@
+---
+title: "Content Launcher Types"
+description: "Type definitions for the Vega Content Launcher API"
+icon: "braces"
+---
+
+# Content Launcher Types
+
+## EntityType
+
+Content entity types used to classify search parameters in `IContentSearchEntity`.
+
+```typescript
+enum EntityType {
+  ACTOR   = 0,   // Actor or performer search (e.g., "Sean Connery movies")
+  GENRE   = 6,   // Genre-based search (e.g., "comedy movies")
+  VIDEO   = 13,  // Video content — movies, shows, or general video
+  SEASON  = 14,  // Season of a TV show
+  EPISODE = 15,  // Episode of a TV show
+}
+```
+
+## LaunchIntent
+
+Possible launch intents for content launch requests.
+
+```typescript
+type LaunchIntent = 'play' | 'search' | 'playshow';
+```
+
+| Value | Description |
+|-------|-------------|
+| `"play"` | Direct playback of identified content |
+| `"search"` | Navigate to search results for the query |
+| `"playshow"` | Episodic playback requiring season and episode resolution |
+
+## IExternalId
+
+An external identifier used to match content across systems. The most common identifier is `amzn_id`.
+
+```typescript
+interface IExternalId {
+  name: string;   // Identifier namespace (e.g., "amzn_id")
+  value: string;  // Identifier value (e.g., a catalog ID)
+}
+```
+
+## IContentSearchEntity
+
+A single entity within a content search request. Each entity represents one dimension of the search.
+
+```typescript
+interface IContentSearchEntity {
+  type: EntityType;            // The type of content entity
+  value?: string;              // Search value (e.g., episode number)
+  externalIdList: IExternalId[]; // External identifiers for cross-system matching
+}
+```
+
+<Accordion title="Example entity">
+```typescript
+const entity: IContentSearchEntity = {
+  type: EntityType.VIDEO,
+  externalIdList: [{ name: 'amzn_id', value: '1700000725' }],
+};
+```
+</Accordion>
+
+## IContentSearch
+
+Parameters for a content search request from the Fire TV launcher or Alexa.
+
+```typescript
+interface IContentSearch {
+  entities: IContentSearchEntity[];  // List of content entities to search for
+  searchKeyword?: string;            // Free-text search keyword from user input
+}
+```
+
+## ILaunchContentOptionalFields
+
+Optional fields that may accompany a content launch request.
+
+```typescript
+interface ILaunchContentOptionalFields {
+  brandName?: string;                    // Brand or provider name
+  metadata?: Record<string, string>;     // Additional key-value metadata
+}
+```
+
+## ContentLaunchPayload
+
+The processed payload produced after parsing a content launch request. This is the output of `handleLaunchContent`.
+
+```typescript
+interface ContentLaunchPayload {
+  launchIntent: LaunchIntent;   // The determined launch intent
+  searchKeyword?: string;       // Search keyword from the original request
+  amzn_id?: string;             // Amazon content identifier
+  episodeNumber?: number;       // Episode number (for episodic content)
+  seasonNumber?: number;        // Season number (for episodic content)
+}
+```
+
+<Accordion title="Example payloads">
+```typescript
+// Direct playback
+const playPayload: ContentLaunchPayload = {
+  launchIntent: 'play',
+  searchKeyword: 'Seabound',
+  amzn_id: '1700000725',
+};
+
+// Episodic playback
+const episodicPayload: ContentLaunchPayload = {
+  launchIntent: 'playshow',
+  searchKeyword: 'The SeaShow season one episode five',
+  amzn_id: '1700000123',
+  episodeNumber: 5,
+  seasonNumber: 1,
+};
+```
+</Accordion>

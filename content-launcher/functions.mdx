@@ -1,0 +1,106 @@
+---
+title: "Content Launcher Functions"
+description: "Core processing functions for handling content launch requests"
+icon: "function-square"
+---
+
+# Content Launcher Functions
+
+## handleLaunchContent
+
+Processes an incoming content launch request from the Fire TV launcher or Alexa.
+
+```typescript
+function handleLaunchContent(
+  contentSearch: IContentSearch,
+  autoPlay: boolean,
+  optionalFields: ILaunchContentOptionalFields,
+): ContentLaunchPayload
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `contentSearch` | `IContentSearch` | Content search parameters from the launcher or Alexa |
+| `autoPlay` | `boolean` | Whether to auto-play content (`true`) or show search results (`false`) |
+| `optionalFields` | `ILaunchContentOptionalFields` | Additional optional parameters (reserved for future use) |
+
+**Returns:** `ContentLaunchPayload` with the resolved intent and identifiers.
+
+```typescript
+import { handleLaunchContent, EntityType } from 'vega-sample-package';
+
+const search = {
+  entities: [
+    { type: EntityType.VIDEO, externalIdList: [{ name: 'amzn_id', value: '1700000725' }] },
+  ],
+  searchKeyword: 'Seabound',
+};
+
+const payload = handleLaunchContent(search, true, {});
+// payload.launchIntent === 'play'
+// payload.amzn_id === '1700000725'
+```
+
+---
+
+## extractAmznId
+
+Extracts the first `amzn_id` value found across all entities in a content search.
+
+```typescript
+function extractAmznId(entities: IContentSearchEntity[]): string | undefined
+```
+
+Iterates through each entity's external ID list and returns the value of the first entry where `name === 'amzn_id'`. Returns `undefined` if not found.
+
+---
+
+## determineIntent
+
+Determines the launch intent based on the `autoPlay` flag, presence of an `amzn_id`, and entity types.
+
+```typescript
+function determineIntent(
+  autoPlay: boolean,
+  amznId: string | undefined,
+  entities: IContentSearchEntity[],
+): LaunchIntent
+```
+
+See the [intent resolution table](/content-launcher/overview#intent-resolution-logic) for the full decision matrix.
+
+---
+
+## serializePayload
+
+Serializes a `ContentLaunchPayload` to a JSON string. Undefined fields are serialized as `null` for round-trip safety.
+
+```typescript
+function serializePayload(payload: ContentLaunchPayload): string
+```
+
+```typescript
+const json = serializePayload({ launchIntent: 'play', amzn_id: '123' });
+// '{"launchIntent":"play","searchKeyword":null,"amzn_id":"123","episodeNumber":null,"seasonNumber":null}'
+```
+
+---
+
+## deserializePayload
+
+Deserializes a JSON string into a `ContentLaunchPayload`. Fields that are `null` in JSON are restored to `undefined`.
+
+```typescript
+function deserializePayload(json: string): ContentLaunchPayload
+```
+
+<Warning>
+  Throws an `Error` if the JSON is malformed or missing the required `launchIntent` field.
+</Warning>
+
+```typescript
+const payload = deserializePayload('{"launchIntent":"play","amzn_id":"123"}');
+// payload.launchIntent === 'play'
+```

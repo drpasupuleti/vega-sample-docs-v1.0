@@ -1,11 +1,23 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "name": "Vega Sample Package",
   "theme": "mint",
+  "name": "Vega Sample Package",
+  "description": "Reference implementation for the Vega OS Content Launcher and Media Controls APIs on Fire TV",
   "colors": {
-    "primary": "#0D9373",
-    "light": "#07C983",
-    "dark": "#0D9373"
+    "primary": "#FF9900",
+    "light": "#FFBB55",
+    "dark": "#E88600"
+  },
+  "icons": {
+    "library": "lucide"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/drpasupuleti/vega-sample-package"
+      }
+    ]
   },
   "navigation": {
     "tabs": [
@@ -15,24 +27,42 @@
           {
             "group": "Getting Started",
             "pages": [
-              "introduction"
+              "introduction",
+              "quickstart"
             ]
           },
           {
-            "group": "APIs",
+            "group": "Content Launcher API",
             "pages": [
-              "content-launcher",
-              "media-controls"
+              "content-launcher/overview",
+              "content-launcher/types",
+              "content-launcher/functions",
+              "content-launcher/examples"
+            ]
+          },
+          {
+            "group": "Media Controls API",
+            "pages": [
+              "media-controls/overview",
+              "media-controls/types",
+              "media-controls/session-manager",
+              "media-controls/endpoint-discovery",
+              "media-controls/examples"
             ]
           },
           {
             "group": "Resources",
             "pages": [
-              "examples"
+              "changelog"
             ]
           }
         ]
       }
     ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/drpasupuleti/vega-sample-package"
+    }
   }
 }
