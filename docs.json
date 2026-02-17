@@ -1,0 +1,15 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Vega Sample Package",
+  "navigation": [
+    {
+      "group": "Vega Sample Package",
+      "pages": [
+        "introduction",
+        "content-launcher",
+        "media-controls",
+        "examples"
+      ]
+    }
+  ]
+}
