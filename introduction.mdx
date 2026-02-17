@@ -1,61 +1,77 @@
 ---
-title: Introduction
-description: Overview of the vega-sample-package React Native + TypeScript reference SDK for Amazon Fire TV
+title: "Vega Sample Package"
+description: "A reference implementation for Vega OS Content Launcher and Media Controls APIs"
 ---
 
-# Vega Sample Package
+The **vega-sample-package** is a TypeScript reference implementation demonstrating two core Vega OS APIs
+for Fire TV app developers. Use it as a starting point for integrating content discovery and media
+playback controls into your app.
 
-The vega-sample-package (v0.1.0) is a React Native + TypeScript reference SDK demonstrating two Vega OS APIs for Amazon Fire TV development.
+<Columns cols={2}>
+  <Card title="Content Launcher API" icon="rocket" href="/content-launcher">
+    Integrate with the Fire TV home launcher and Alexa voice commands for content search and playback.
+  </Card>
+  <Card title="Media Controls API" icon="circle-play" href="/media-controls">
+    Support remote, voice, and touch input modalities for controlling media playback.
+  </Card>
+</Columns>
 
-## APIs
+## Quick Start
 
-### Content Launcher API
+<Steps>
+  <Step title="Install the package">
+    ```bash
+    npm install vega-sample-package
+    ```
+  </Step>
+  <Step title="Import the APIs">
+    ```typescript
+    import { handleLaunchContent, EntityType } from 'vega-sample-package';
+    import { SessionManager, PlaybackState } from 'vega-sample-package';
+    ```
+  </Step>
+  <Step title="Handle a content launch request">
+    ```typescript
+    const search = {
+      entities: [
+        { type: EntityType.VIDEO, externalIdList: [{ name: 'amzn_id', value: '1700000725' }] },
+      ],
+      searchKeyword: 'Seabound',
+    };
 
-The Content Launcher API integrates your application with the Fire TV launcher and Alexa voice commands. It enables:
+    const payload = handleLaunchContent(search, true, {});
+    console.log(payload.launchIntent); // "play"
+    ```
+  </Step>
+  <Step title="Create a media session">
+    ```typescript
+    const manager = new SessionManager();
 
-- Content search through voice commands like "Alexa, find action movies"
-- Direct playback via commands like "Alexa, watch The Grand Tour"
-- Deep linking from the Fire TV home screen to specific content
+    const session = manager.createSession({
+      title: 'My Video',
+      playbackState: PlaybackState.PLAYING,
+      supportedControls: ['play', 'pause', 'stop', 'seek'],
+      capabilities: {
+        canSeek: true, canSkipForward: true, canSkipBackward: true,
+        canFastForward: false, canRewind: false, canSetPlaybackSpeed: false,
+      },
+      positionMs: 0,
+      durationMs: 3600000,
+    });
+    ```
+  </Step>
+</Steps>
 
-### Media Controls API
+## Package Info
 
-The Media Controls API provides session-based media playback control supporting multiple input methods:
+| Property | Value |
+|----------|-------|
+| Version | `0.1.0` |
+| License | MIT |
+| Language | TypeScript (strict mode) |
+| Platform | React Native / Fire TV |
 
-- Remote control navigation and playback buttons
-- Alexa voice commands for play, pause, seek, and skip
-- Touch input for supported devices
-- Picture-in-Picture with multiple independent sessions
-
-## Getting started
-
-### Installation
-
-```bash
-npm install
-```
-
-### Development commands
-
-Run type checking:
-
-```bash
-npm run typecheck
-```
-
-Run linting:
-
-```bash
-npm run lint
-```
-
-Build the package:
-
-```bash
-npm run build
-```
-
-Run tests:
-
-```bash
-npm test
-```
+<Info>
+  This package is intended as a reference implementation for documentation and learning purposes.
+  Adapt the patterns shown here to your own app's architecture.
+</Info>
