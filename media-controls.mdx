@@ -1,0 +1,250 @@
+---
+title: Media Controls API
+description: API reference for the Media Controls API providing session-based media playback control
+---
+
+# Media Controls API
+
+The Media Controls API provides session-based media playback control supporting remote, voice, and touch inputs.
+
+## Enums
+
+### PlaybackState
+
+Enum representing the current playback state.
+
+```typescript
+enum PlaybackState {
+  IDLE = 'IDLE',
+  PLAYING = 'PLAYING',
+  PAUSED = 'PAUSED',
+  BUFFERING = 'BUFFERING',
+  STOPPED = 'STOPPED'
+}
+```
+
+### RepeatMode
+
+Enum representing the repeat mode for playback.
+
+```typescript
+enum RepeatMode {
+  OFF = 'OFF',
+  ONE = 'ONE',
+  ALL = 'ALL'
+}
+```
+
+## Types
+
+### SupportedControl
+
+Type representing the 12 supported control actions.
+
+```typescript
+type SupportedControl =
+  | 'play'
+  | 'pause'
+  | 'stop'
+  | 'seekForward'
+  | 'seekBackward'
+  | 'skipNext'
+  | 'skipPrevious'
+  | 'fastForward'
+  | 'rewind'
+  | 'setPosition'
+  | 'setRepeatMode'
+  | 'setShuffle';
+```
+
+### MediaSessionCapabilities
+
+Type representing the 6 capability flags for a media session.
+
+```typescript
+interface MediaSessionCapabilities {
+  canPlay: boolean;
+  canPause: boolean;
+  canSeek: boolean;
+  canSkipNext: boolean;
+  canSkipPrevious: boolean;
+  canSetRepeatMode: boolean;
+}
+```
+
+### MediaSession
+
+Interface representing a media session.
+
+```typescript
+interface MediaSession {
+  sessionId: string;
+  title: string;
+  playbackState: PlaybackState;
+  supportedControls: SupportedControl[];
+  capabilities: MediaSessionCapabilities;
+  positionMs: number;
+  durationMs: number;
+}
+```
+
+### SessionListener
+
+Callback type for session change notifications.
+
+```typescript
+type SessionListener = (session: MediaSession) => void;
+```
+
+### MediaEndpoint
+
+Type representing a media endpoint for discovery.
+
+```typescript
+interface MediaEndpoint {
+  endpointId: string;
+  friendlyName: string;
+  sessions: MediaSession[];
+}
+```
+
+## Interfaces
+
+### IMediaControlClientAsync
+
+Interface for the async media control client with 18 methods.
+
+```typescript
+interface IMediaControlClientAsync {
+  // Playback controls
+  play(sessionId: string): Promise<void>;
+  pause(sessionId: string): Promise<void>;
+  stop(sessionId: string): Promise<void>;
+  
+  // Seek controls
+  seekForward(sessionId: string, offsetMs: number): Promise<void>;
+  seekBackward(sessionId: string, offsetMs: number): Promise<void>;
+  setPosition(sessionId: string, positionMs: number): Promise<void>;
+  
+  // Skip controls
+  skipNext(sessionId: string): Promise<void>;
+  skipPrevious(sessionId: string): Promise<void>;
+  
+  // Speed controls
+  fastForward(sessionId: string): Promise<void>;
+  rewind(sessionId: string): Promise<void>;
+  
+  // Mode controls
+  setRepeatMode(sessionId: string, mode: RepeatMode): Promise<void>;
+  setShuffle(sessionId: string, enabled: boolean): Promise<void>;
+  
+  // Session management
+  getSession(sessionId: string): Promise<MediaSession | null>;
+  getAllSessions(): Promise<MediaSession[]>;
+  getPlaybackState(sessionId: string): Promise<PlaybackState>;
+  getPosition(sessionId: string): Promise<number>;
+  getDuration(sessionId: string): Promise<number>;
+  getCapabilities(sessionId: string): Promise<MediaSessionCapabilities>;
+}
+```
+
+### IMediaControlHandlerAsync
+
+Interface for the async media control handler with 12 methods.
+
+```typescript
+interface IMediaControlHandlerAsync {
+  onPlay(sessionId: string): Promise<void>;
+  onPause(sessionId: string): Promise<void>;
+  onStop(sessionId: string): Promise<void>;
+  onSeekForward(sessionId: string, offsetMs: number): Promise<void>;
+  onSeekBackward(sessionId: string, offsetMs: number): Promise<void>;
+  onSetPosition(sessionId: string, positionMs: number): Promise<void>;
+  onSkipNext(sessionId: string): Promise<void>;
+  onSkipPrevious(sessionId: string): Promise<void>;
+  onFastForward(sessionId: string): Promise<void>;
+  onRewind(sessionId: string): Promise<void>;
+  onSetRepeatMode(sessionId: string, mode: RepeatMode): Promise<void>;
+  onSetShuffle(sessionId: string, enabled: boolean): Promise<void>;
+}
+```
+
+## Classes
+
+### SessionManager
+
+Manages media sessions with listener notification support.
+
+```typescript
+class SessionManager {
+  // Create a new media session
+  createSession(session: MediaSession): void;
+  
+  // Get a session by ID
+  getSession(sessionId: string): MediaSession | null;
+  
+  // Update a session (notifies all listeners)
+  updateSession(sessionId: string, updates: Partial<MediaSession>): void;
+  
+  // Destroy a session
+  destroySession(sessionId: string): void;
+  
+  // Get all active sessions
+  getAllSessions(): MediaSession[];
+  
+  // Add a session change listener
+  addListener(listener: SessionListener): void;
+  
+  // Remove a session change listener
+  removeListener(listener: SessionListener): void;
+}
+```
+
+**Methods:**
+
+| Method | Parameters | Returns | Description |
+| --- | --- | --- | --- |
+| `createSession` | `session: MediaSession` | `void` | Creates a new media session. |
+| `getSession` | `sessionId: string` | `MediaSession \| null` | Retrieves a session by ID. |
+| `updateSession` | `sessionId: string, updates: Partial<MediaSession>` | `void` | Updates a session and notifies listeners. |
+| `destroySession` | `sessionId: string` | `void` | Destroys a session. |
+| `getAllSessions` | none | `MediaSession[]` | Returns all active sessions. |
+| `addListener` | `listener: SessionListener` | `void` | Adds a session change listener. |
+| `removeListener` | `listener: SessionListener` | `void` | Removes a session change listener. |
+
+### EndpointDiscovery
+
+Manages endpoint registration and session association.
+
+```typescript
+class EndpointDiscovery {
+  // Register an application endpoint
+  registerApp(endpointId: string, friendlyName: string): void;
+  
+  // Unregister an application endpoint
+  unregisterApp(endpointId: string): void;
+  
+  // List all registered endpoints
+  listEndpoints(): MediaEndpoint[];
+  
+  // Get a specific endpoint
+  getEndpoint(endpointId: string): MediaEndpoint | null;
+  
+  // Add a session to an endpoint
+  addSessionToEndpoint(endpointId: string, session: MediaSession): void;
+  
+  // Remove a session from an endpoint
+  removeSessionFromEndpoint(endpointId: string, sessionId: string): void;
+}
+```
+
+**Methods:**
+
+| Method | Parameters | Returns | Description |
+| --- | --- | --- | --- |
+| `registerApp` | `endpointId: string, friendlyName: string` | `void` | Registers an application endpoint. |
+| `unregisterApp` | `endpointId: string` | `void` | Unregisters an application endpoint. |
+| `listEndpoints` | none | `MediaEndpoint[]` | Lists all registered endpoints. |
+| `getEndpoint` | `endpointId: string` | `MediaEndpoint \| null` | Gets a specific endpoint by ID. |
+| `addSessionToEndpoint` | `endpointId: string, session: MediaSession` | `void` | Adds a session to an endpoint. |
+| `removeSessionFromEndpoint` | `endpointId: string, sessionId: string` | `void` | Removes a session from an endpoint. |
