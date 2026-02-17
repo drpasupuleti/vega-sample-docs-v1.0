@@ -2,15 +2,27 @@
   "$schema": "https://mintlify.com/docs.json",
   "name": "Vega Sample Package",
   "theme": "mint",
-  "navigation": [
-    {
-      "group": "Vega Sample Package",
-      "pages": [
-        "introduction",
-        "content-launcher",
-        "media-controls",
-        "examples"
-      ]
-    }
-  ]
+  "colors": {
+    "primary": "#0D9373",
+    "light": "#07C983",
+    "dark": "#0D9373"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Vega Sample Package",
+            "pages": [
+              "introduction",
+              "content-launcher",
+              "media-controls",
+              "examples"
+            ]
+          }
+        ]
+      }
+    ]
+  }
 }
