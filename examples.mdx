@@ -1,389 +1,245 @@
 ---
-title: Examples
-description: Full TypeScript code examples for Content Launcher and Media Controls APIs
+title: "Examples"
+description: "End-to-end usage examples for Content Launcher and Media Controls APIs"
 ---
 
-# Examples
+## Content Launcher Examples
 
-Complete TypeScript examples demonstrating the Content Launcher and Media Controls APIs.
+<Tabs>
+  <Tab title="Watch (play intent)">
+    When a user says "Alexa, Watch Seabound", `autoPlay` is `true` and an `amzn_id` is present
+    with no EPISODE entity — the intent resolves to `play`.
 
-## Content Launcher examples
+    ```typescript
+    import { handleLaunchContent, EntityType } from 'vega-sample-package';
 
-### Alexa Watch command (play intent)
+    const search = {
+      entities: [
+        {
+          type: EntityType.VIDEO,
+          externalIdList: [{ name: 'amzn_id', value: '1700000725' }],
+        },
+      ],
+      searchKeyword: 'Seabound',
+    };
 
-Handle "Alexa, watch The Grand Tour" with direct playback using an Amazon ID.
+    const payload = handleLaunchContent(search, true, { brandName: 'StreamCo' });
+
+    console.log(payload.launchIntent); // "play"
+    console.log(payload.amzn_id);      // "1700000725"
+    ```
+  </Tab>
+
+  <Tab title="Find (search intent)">
+    When a user says "Alexa, Find Seabound", `autoPlay` is `false` — the intent is always `search`.
+
+    ```typescript
+    import { handleLaunchContent, EntityType } from 'vega-sample-package';
+
+    const search = {
+      entities: [
+        {
+          type: EntityType.VIDEO,
+          externalIdList: [{ name: 'amzn_id', value: '1700000725' }],
+        },
+      ],
+      searchKeyword: 'Seabound',
+    };
+
+    const payload = handleLaunchContent(search, false, {});
+
+    console.log(payload.launchIntent); // "search"
+    ```
+  </Tab>
+
+  <Tab title="Episodic (playshow intent)">
+    When a user says "Alexa, Play Season 1 Episode 5 from The SeaShow", `autoPlay` is `true`,
+    an `amzn_id` is present, and EPISODE + SEASON entities exist — the intent resolves to `playshow`.
+
+    ```typescript
+    import { handleLaunchContent, EntityType } from 'vega-sample-package';
+
+    const search = {
+      entities: [
+        {
+          type: EntityType.VIDEO,
+          externalIdList: [{ name: 'amzn_id', value: '1700000123' }],
+        },
+        { type: EntityType.EPISODE, value: '5', externalIdList: [] },
+        { type: EntityType.SEASON, value: '1', externalIdList: [] },
+      ],
+      searchKeyword: 'The SeaShow season one episode five',
+    };
+
+    const payload = handleLaunchContent(search, true, {});
+
+    console.log(payload.launchIntent);  // "playshow"
+    console.log(payload.episodeNumber); // 5
+    console.log(payload.seasonNumber);  // 1
+    ```
+  </Tab>
+
+  <Tab title="Genre search">
+    When a user says "Alexa, Find comedy movies", `autoPlay` is `false` and no `amzn_id` is
+    present — the intent is `search`.
+
+    ```typescript
+    import { handleLaunchContent, EntityType } from 'vega-sample-package';
+
+    const search = {
+      entities: [
+        { type: EntityType.GENRE, externalIdList: [] },
+      ],
+      searchKeyword: 'comedy movies',
+    };
+
+    const payload = handleLaunchContent(search, false, {});
+
+    console.log(payload.launchIntent); // "search"
+    ```
+  </Tab>
+</Tabs>
+
+### Serialization Round-Trip
 
 ```typescript
-import {
-  handleLaunchContent,
-  EntityType,
-  IContentSearch,
-  ContentLaunchPayload
-} from 'vega-sample-package';
+import { handleLaunchContent, serializePayload, deserializePayload, EntityType } from 'vega-sample-package';
 
-const contentSearch: IContentSearch = {
+const search = {
   entities: [
-    {
-      type: EntityType.VIDEO,
-      value: 'The Grand Tour',
-      externalIdList: [
-        { name: 'amzn_id', value: 'amzn1.dv.gti.12345' }
-      ]
-    }
-  ]
-};
-
-const payload: ContentLaunchPayload = handleLaunchContent(
-  contentSearch,
-  true // autoPlay = true
-);
-
-// Result: { launchIntent: 'play', amzn_id: 'amzn1.dv.gti.12345' }
-console.log(payload);
-```
-
-### Alexa Find command (search intent)
-
-Handle "Alexa, find action movies" with search results display.
-
-```typescript
-import {
-  handleLaunchContent,
-  EntityType,
-  IContentSearch,
-  ContentLaunchPayload
-} from 'vega-sample-package';
-
-const contentSearch: IContentSearch = {
-  entities: [
-    {
-      type: EntityType.GENRE,
-      value: 'Action',
-      externalIdList: []
-    }
+    { type: EntityType.VIDEO, externalIdList: [{ name: 'amzn_id', value: '1700000123' }] },
+    { type: EntityType.EPISODE, value: '5', externalIdList: [] },
+    { type: EntityType.SEASON, value: '1', externalIdList: [] },
   ],
-  searchKeyword: 'action movies'
+  searchKeyword: 'The SeaShow',
 };
 
-const payload: ContentLaunchPayload = handleLaunchContent(
-  contentSearch,
-  false // autoPlay = false triggers search intent
-);
+const payload = handleLaunchContent(search, true, {});
+const json = serializePayload(payload);
+const restored = deserializePayload(json);
 
-// Result: { launchIntent: 'search', searchKeyword: 'action movies' }
-console.log(payload);
+console.log(restored.launchIntent);  // "playshow"
+console.log(restored.episodeNumber); // 5
 ```
 
-### Play Season/Episode (playshow intent)
+---
 
-Handle "Alexa, play season 2 episode 5 of The Office" with episode-specific playback.
+## Media Controls Examples
 
-```typescript
-import {
-  handleLaunchContent,
-  EntityType,
-  IContentSearch,
-  ContentLaunchPayload
-} from 'vega-sample-package';
+<Tabs>
+  <Tab title="Basic handler">
+    Implement `IMediaControlHandlerAsync` and wire it up with a `SessionManager`.
 
-const contentSearch: IContentSearch = {
-  entities: [
-    {
-      type: EntityType.VIDEO,
-      value: 'The Office',
-      externalIdList: [
-        { name: 'amzn_id', value: 'amzn1.dv.gti.67890' }
-      ]
-    },
-    {
-      type: EntityType.SEASON,
-      value: '2',
-      externalIdList: []
-    },
-    {
-      type: EntityType.EPISODE,
-      value: '5',
-      externalIdList: []
-    }
-  ]
-};
+    ```typescript
+    import {
+      type IMediaControlHandlerAsync,
+      PlaybackState,
+      SessionManager,
+    } from 'vega-sample-package';
 
-const payload: ContentLaunchPayload = handleLaunchContent(
-  contentSearch,
-  true // autoPlay = true with EPISODE entity triggers playshow
-);
+    let positionMs = 0;
+    let state = PlaybackState.IDLE;
 
-// Result: { launchIntent: 'playshow', amzn_id: 'amzn1.dv.gti.67890', seasonNumber: 2, episodeNumber: 5 }
-console.log(payload);
-```
+    const handler: IMediaControlHandlerAsync = {
+      async handlePlay()    { state = PlaybackState.PLAYING; },
+      async handlePause()   { state = PlaybackState.PAUSED; },
+      async handleStop()    { state = PlaybackState.STOPPED; positionMs = 0; },
+      async handleSeek(ms)  { positionMs = ms; },
+      async handleNext()    { /* load next track */ },
+      async handlePrevious(){ /* load previous track */ },
+      async handleFastForward() { /* increase speed */ },
+      async handleRewind()      { /* decrease speed */ },
+      async handleSkipForward(ms)  { positionMs += ms; },
+      async handleSkipBackward(ms) { positionMs = Math.max(0, positionMs - ms); },
+      async handleTogglePlayPause() {
+        state = state === PlaybackState.PLAYING
+          ? PlaybackState.PAUSED
+          : PlaybackState.PLAYING;
+      },
+      async handleStartOver() { positionMs = 0; state = PlaybackState.PLAYING; },
+    };
 
-### Genre search
-
-Handle genre-based content discovery.
-
-```typescript
-import {
-  handleLaunchContent,
-  EntityType,
-  IContentSearch,
-  ILaunchContentOptionalFields,
-  ContentLaunchPayload
-} from 'vega-sample-package';
-
-const contentSearch: IContentSearch = {
-  entities: [
-    {
-      type: EntityType.GENRE,
-      value: 'Comedy',
-      externalIdList: []
-    },
-    {
-      type: EntityType.ACTOR,
-      value: 'Steve Carell',
-      externalIdList: []
-    }
-  ],
-  searchKeyword: 'Steve Carell comedies'
-};
-
-const optionalFields: ILaunchContentOptionalFields = {
-  brandName: 'MyStreamingApp',
-  metadata: {
-    source: 'voice_search',
-    timestamp: new Date().toISOString()
-  }
-};
-
-const payload: ContentLaunchPayload = handleLaunchContent(
-  contentSearch,
-  false,
-  optionalFields
-);
-
-// Result: { launchIntent: 'search', searchKeyword: 'Steve Carell comedies' }
-console.log(payload);
-```
-
-## Media Controls examples
-
-### Handler implementation with SessionManager
-
-Implement a media control handler with session management for play, pause, seek, and skip operations.
-
-```typescript
-import {
-  IMediaControlHandlerAsync,
-  SessionManager,
-  MediaSession,
-  PlaybackState,
-  RepeatMode
-} from 'vega-sample-package';
-
-const sessionManager = new SessionManager();
-
-// Create initial session
-const session: MediaSession = {
-  sessionId: 'session-001',
-  title: 'My Video',
-  playbackState: PlaybackState.IDLE,
-  supportedControls: ['play', 'pause', 'stop', 'seekForward', 'seekBackward', 'skipNext', 'skipPrevious', 'setPosition'],
-  capabilities: {
-    canPlay: true,
-    canPause: true,
-    canSeek: true,
-    canSkipNext: true,
-    canSkipPrevious: true,
-    canSetRepeatMode: false
-  },
-  positionMs: 0,
-  durationMs: 3600000 // 1 hour
-};
-
-sessionManager.createSession(session);
-
-// Add listener for session updates
-sessionManager.addListener((updatedSession) => {
-  console.log('Session updated:', updatedSession.sessionId, updatedSession.playbackState);
-});
-
-// Implement the handler
-class MediaControlHandler implements IMediaControlHandlerAsync {
-  async onPlay(sessionId: string): Promise<void> {
-    sessionManager.updateSession(sessionId, {
-      playbackState: PlaybackState.PLAYING
+    const manager = new SessionManager();
+    const session = manager.createSession({
+      title: 'Planet Earth II — Mountains',
+      playbackState: PlaybackState.IDLE,
+      supportedControls: ['play', 'pause', 'stop', 'seek', 'skipForward', 'skipBackward'],
+      capabilities: {
+        canSeek: true, canSkipForward: true, canSkipBackward: true,
+        canFastForward: false, canRewind: false, canSetPlaybackSpeed: true,
+      },
+      positionMs: 0,
+      durationMs: 3600000,
     });
-  }
 
-  async onPause(sessionId: string): Promise<void> {
-    sessionManager.updateSession(sessionId, {
-      playbackState: PlaybackState.PAUSED
+    // Listen for state changes
+    manager.addListener(session.sessionId, (updated) => {
+      console.log(`${updated.playbackState} at ${updated.positionMs}ms`);
     });
-  }
 
-  async onStop(sessionId: string): Promise<void> {
-    sessionManager.updateSession(sessionId, {
-      playbackState: PlaybackState.STOPPED,
-      positionMs: 0
+    // Handle a play command
+    await handler.handlePlay();
+    manager.updateSession(session.sessionId, {
+      playbackState: state,
+      positionMs,
     });
-  }
+    ```
+  </Tab>
 
-  async onSeekForward(sessionId: string, offsetMs: number): Promise<void> {
-    const session = sessionManager.getSession(sessionId);
-    if (session) {
-      const newPosition = Math.min(session.positionMs + offsetMs, session.durationMs);
-      sessionManager.updateSession(sessionId, { positionMs: newPosition });
-    }
-  }
+  <Tab title="Picture-in-Picture">
+    Create two independent sessions for a primary video and a PiP overlay.
 
-  async onSeekBackward(sessionId: string, offsetMs: number): Promise<void> {
-    const session = sessionManager.getSession(sessionId);
-    if (session) {
-      const newPosition = Math.max(session.positionMs - offsetMs, 0);
-      sessionManager.updateSession(sessionId, { positionMs: newPosition });
-    }
-  }
+    ```typescript
+    import { PlaybackState, SessionManager, EndpointDiscovery } from 'vega-sample-package';
 
-  async onSetPosition(sessionId: string, positionMs: number): Promise<void> {
-    const session = sessionManager.getSession(sessionId);
-    if (session) {
-      const clampedPosition = Math.max(0, Math.min(positionMs, session.durationMs));
-      sessionManager.updateSession(sessionId, { positionMs: clampedPosition });
-    }
-  }
+    const manager = new SessionManager();
+    const discovery = new EndpointDiscovery();
 
-  async onSkipNext(sessionId: string): Promise<void> {
-    console.log('Skip to next track for session:', sessionId);
-    // Implement playlist navigation logic
-  }
+    // Register two apps
+    discovery.registerApp('com.example.streaming', 'Example Streaming');
+    discovery.registerApp('com.example.sports', 'Example Sports');
 
-  async onSkipPrevious(sessionId: string): Promise<void> {
-    console.log('Skip to previous track for session:', sessionId);
-    // Implement playlist navigation logic
-  }
+    // Primary session (full-screen documentary)
+    const primary = manager.createSession({
+      title: 'Documentary — Deep Ocean',
+      playbackState: PlaybackState.PLAYING,
+      supportedControls: ['play', 'pause', 'stop', 'seek', 'skipForward', 'skipBackward'],
+      capabilities: {
+        canSeek: true, canSkipForward: true, canSkipBackward: true,
+        canFastForward: false, canRewind: false, canSetPlaybackSpeed: true,
+      },
+      positionMs: 0,
+      durationMs: 5400000,
+    });
 
-  async onFastForward(sessionId: string): Promise<void> {
-    await this.onSeekForward(sessionId, 30000); // 30 seconds
-  }
+    // PiP session (live sports overlay)
+    const pip = manager.createSession({
+      title: 'Live — Championship Finals',
+      playbackState: PlaybackState.PLAYING,
+      supportedControls: ['play', 'pause', 'stop'],
+      capabilities: {
+        canSeek: false, canSkipForward: false, canSkipBackward: false,
+        canFastForward: false, canRewind: false, canSetPlaybackSpeed: false,
+      },
+      positionMs: 0,
+      durationMs: 7200000,
+    });
 
-  async onRewind(sessionId: string): Promise<void> {
-    await this.onSeekBackward(sessionId, 30000); // 30 seconds
-  }
+    // Associate sessions with endpoints
+    discovery.addSessionToEndpoint('com.example.streaming', primary.sessionId);
+    discovery.addSessionToEndpoint('com.example.sports', pip.sessionId);
 
-  async onSetRepeatMode(sessionId: string, mode: RepeatMode): Promise<void> {
-    console.log('Set repeat mode:', mode, 'for session:', sessionId);
-  }
+    // Sessions are independent — pausing PiP doesn't affect primary
+    manager.updateSession(pip.sessionId, { playbackState: PlaybackState.PAUSED });
 
-  async onSetShuffle(sessionId: string, enabled: boolean): Promise<void> {
-    console.log('Set shuffle:', enabled, 'for session:', sessionId);
-  }
-}
+    const primaryState = manager.getSession(primary.sessionId);
+    console.log(primaryState?.playbackState); // "playing" (unaffected)
+    ```
+  </Tab>
+</Tabs>
 
-const handler = new MediaControlHandler();
-
-// Handle incoming commands
-await handler.onPlay('session-001');
-await handler.onSeekForward('session-001', 60000); // Seek forward 1 minute
-await handler.onPause('session-001');
-```
-
-### Picture-in-Picture with multiple sessions
-
-Manage two independent media sessions with EndpointDiscovery for Picture-in-Picture scenarios.
-
-```typescript
-import {
-  SessionManager,
-  EndpointDiscovery,
-  MediaSession,
-  PlaybackState,
-  MediaEndpoint
-} from 'vega-sample-package';
-
-const sessionManager = new SessionManager();
-const endpointDiscovery = new EndpointDiscovery();
-
-// Register the application endpoint
-endpointDiscovery.registerApp('my-app-endpoint', 'My Streaming App');
-
-// Create main video session
-const mainSession: MediaSession = {
-  sessionId: 'main-video',
-  title: 'Main Content - Movie',
-  playbackState: PlaybackState.PLAYING,
-  supportedControls: ['play', 'pause', 'stop', 'seekForward', 'seekBackward', 'setPosition'],
-  capabilities: {
-    canPlay: true,
-    canPause: true,
-    canSeek: true,
-    canSkipNext: false,
-    canSkipPrevious: false,
-    canSetRepeatMode: false
-  },
-  positionMs: 120000, // 2 minutes in
-  durationMs: 7200000 // 2 hours
-};
-
-// Create PiP session for secondary content
-const pipSession: MediaSession = {
-  sessionId: 'pip-video',
-  title: 'PiP - Live Sports',
-  playbackState: PlaybackState.PLAYING,
-  supportedControls: ['play', 'pause', 'stop'],
-  capabilities: {
-    canPlay: true,
-    canPause: true,
-    canSeek: false, // Live content cannot seek
-    canSkipNext: false,
-    canSkipPrevious: false,
-    canSetRepeatMode: false
-  },
-  positionMs: 0,
-  durationMs: 0 // Live content has no fixed duration
-};
-
-// Create sessions in session manager
-sessionManager.createSession(mainSession);
-sessionManager.createSession(pipSession);
-
-// Add sessions to the endpoint
-endpointDiscovery.addSessionToEndpoint('my-app-endpoint', mainSession);
-endpointDiscovery.addSessionToEndpoint('my-app-endpoint', pipSession);
-
-// Listen for session updates
-sessionManager.addListener((session) => {
-  console.log(`Session ${session.sessionId} state: ${session.playbackState}`);
-});
-
-// Get endpoint with all sessions
-const endpoint: MediaEndpoint | null = endpointDiscovery.getEndpoint('my-app-endpoint');
-if (endpoint) {
-  console.log(`Endpoint: ${endpoint.friendlyName}`);
-  console.log(`Active sessions: ${endpoint.sessions.length}`);
-  
-  endpoint.sessions.forEach((session) => {
-    console.log(`  - ${session.title} (${session.playbackState})`);
-  });
-}
-
-// Control sessions independently
-sessionManager.updateSession('main-video', {
-  playbackState: PlaybackState.PAUSED
-});
-
-// PiP continues playing while main is paused
-const allSessions = sessionManager.getAllSessions();
-allSessions.forEach((session) => {
-  console.log(`${session.title}: ${session.playbackState}`);
-});
-// Output:
-// Main Content - Movie: PAUSED
-// PiP - Live Sports: PLAYING
-
-// Clean up when PiP is closed
-endpointDiscovery.removeSessionFromEndpoint('my-app-endpoint', 'pip-video');
-sessionManager.destroySession('pip-video');
-
-// List all endpoints
-const endpoints = endpointDiscovery.listEndpoints();
-console.log('Registered endpoints:', endpoints.length);
-```
+<Warning>
+  Always call `manager.destroySession(sessionId)` when playback ends to clean up resources
+  and remove listeners. For endpoint discovery, also call `discovery.removeSessionFromEndpoint`
+  and `discovery.unregisterApp` during cleanup.
+</Warning>

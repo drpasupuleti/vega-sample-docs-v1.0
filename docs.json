@@ -13,11 +13,21 @@
         "tab": "Documentation",
         "groups": [
           {
-            "group": "Vega Sample Package",
+            "group": "Getting Started",
             "pages": [
-              "introduction",
+              "introduction"
+            ]
+          },
+          {
+            "group": "APIs",
+            "pages": [
               "content-launcher",
-              "media-controls",
+              "media-controls"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
               "examples"
             ]
           }

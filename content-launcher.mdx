@@ -1,202 +1,167 @@
 ---
-title: Content Launcher API
-description: API reference for the Content Launcher API enabling Fire TV launcher and Alexa voice integration
+title: "Content Launcher API"
+description: "Integrate with Fire TV home launcher and Alexa voice commands for content search and playback"
 ---
 
-# Content Launcher API
+The Content Launcher API enables your Vega app to respond to content launch requests from the
+Fire TV home launcher and Alexa voice commands. When a user says "Alexa, watch Seabound" or
+"Alexa, find comedy movies", the platform dispatches a structured request that your app processes
+using `handleLaunchContent`.
 
-The Content Launcher API integrates your application with the Fire TV launcher and Alexa voice commands for content search and playback.
+## How It Works
 
-## Types
+<Steps>
+  <Step title="User issues a voice command or selects content">
+    The Fire TV launcher or Alexa captures the user's intent and builds a content search request
+    containing entities (VIDEO, EPISODE, SEASON, GENRE, ACTOR) and an optional search keyword.
+  </Step>
+  <Step title="Platform dispatches the request to your app">
+    Your app receives an `IContentSearch` object with `autoPlay` set to `true` (direct playback)
+    or `false` (show search results).
+  </Step>
+  <Step title="Your app processes the request">
+    Call `handleLaunchContent(contentSearch, autoPlay, optionalFields)` to parse entities,
+    extract identifiers, and determine the launch intent.
+  </Step>
+  <Step title="Act on the resolved intent">
+    Use the returned `ContentLaunchPayload` to navigate to playback, search results, or
+    episodic content.
+  </Step>
+</Steps>
 
-### EntityType
+## Launch Intent Logic
 
-Enum representing the type of content entity.
+The intent is determined by the combination of `autoPlay`, the presence of an `amzn_id`, and
+whether an `EPISODE` entity exists:
+
+| `autoPlay` | `amzn_id` present | Has EPISODE entity | Result |
+|:---:|:---:|:---:|:---:|
+| `false` | any | any | `search` |
+| `true` | yes | yes | `playshow` |
+| `true` | yes | no | `play` |
+| `true` | no | any | `search` |
+
+## Entity Types
 
 ```typescript
 enum EntityType {
-  ACTOR = 0,
-  GENRE = 6,
-  VIDEO = 13,
-  SEASON = 14,
-  EPISODE = 15
+  ACTOR   = 0,   // Actor or performer search
+  GENRE   = 6,   // Genre-based search
+  VIDEO   = 13,  // Movies, shows, or general video
+  SEASON  = 14,  // Season of a TV show
+  EPISODE = 15,  // Episode of a TV show
 }
 ```
 
-### LaunchIntent
+## Core Types
 
-Type representing the intent for launching content.
+<AccordionGroup>
+  <Accordion title="IContentSearch" icon="magnifying-glass">
+    The top-level search request from the launcher or Alexa.
 
-```typescript
-type LaunchIntent = 'play' | 'search' | 'playshow';
-```
+    <ParamField path="entities" type="IContentSearchEntity[]" required>
+      List of content entities to search for.
+    </ParamField>
+    <ParamField path="searchKeyword" type="string">
+      Free-text search keyword from the user's voice utterance.
+    </ParamField>
+  </Accordion>
 
-### IExternalId
+  <Accordion title="IContentSearchEntity" icon="cube">
+    A single entity within a content search request.
 
-Interface for external identifier pairs.
+    <ParamField path="type" type="EntityType" required>
+      The type of content entity (VIDEO, EPISODE, SEASON, GENRE, ACTOR).
+    </ParamField>
+    <ParamField path="value" type="string">
+      The search value (e.g., episode number, season number).
+    </ParamField>
+    <ParamField path="externalIdList" type="IExternalId[]" required>
+      External identifiers for cross-system content matching.
+    </ParamField>
+  </Accordion>
 
-```typescript
-interface IExternalId {
-  name: string;
-  value: string;
-}
-```
+  <Accordion title="IExternalId" icon="fingerprint">
+    An external identifier used to match content across systems.
 
-### IContentSearchEntity
+    <ParamField path="name" type="string" required>
+      The identifier namespace (e.g., `amzn_id`, `catalogContentId`).
+    </ParamField>
+    <ParamField path="value" type="string" required>
+      The identifier value.
+    </ParamField>
+  </Accordion>
 
-Interface for a content search entity.
+  <Accordion title="ContentLaunchPayload" icon="paper-plane">
+    The processed output after parsing a content launch request.
 
-```typescript
-interface IContentSearchEntity {
-  type: EntityType;
-  value?: string;
-  externalIdList: IExternalId[];
-}
-```
-
-### IContentSearch
-
-Interface for content search parameters.
-
-```typescript
-interface IContentSearch {
-  entities: IContentSearchEntity[];
-  searchKeyword?: string;
-}
-```
-
-### ILaunchContentOptionalFields
-
-Interface for optional launch content fields.
-
-```typescript
-interface ILaunchContentOptionalFields {
-  brandName?: string;
-  metadata?: Record<string, string>;
-}
-```
-
-### ContentLaunchPayload
-
-Interface for the content launch payload.
-
-```typescript
-interface ContentLaunchPayload {
-  launchIntent: LaunchIntent;
-  searchKeyword?: string;
-  amzn_id?: string;
-  episodeNumber?: number;
-  seasonNumber?: number;
-}
-```
+    <ResponseField name="launchIntent" type="'play' | 'search' | 'playshow'" required>
+      The determined launch intent.
+    </ResponseField>
+    <ResponseField name="searchKeyword" type="string">
+      The search keyword from the original request.
+    </ResponseField>
+    <ResponseField name="amzn_id" type="string">
+      The Amazon content identifier extracted from external IDs.
+    </ResponseField>
+    <ResponseField name="episodeNumber" type="number">
+      Episode number for episodic content (only for `playshow` intent).
+    </ResponseField>
+    <ResponseField name="seasonNumber" type="number">
+      Season number for episodic content (only for `playshow` intent).
+    </ResponseField>
+  </Accordion>
+</AccordionGroup>
 
 ## Functions
 
 ### handleLaunchContent
 
-Processes a content search request and returns a launch payload.
+Processes an incoming content launch request and returns a `ContentLaunchPayload`.
 
 ```typescript
 function handleLaunchContent(
   contentSearch: IContentSearch,
   autoPlay: boolean,
-  optionalFields?: ILaunchContentOptionalFields
-): ContentLaunchPayload;
+  optionalFields: ILaunchContentOptionalFields,
+): ContentLaunchPayload
 ```
 
-**Parameters:**
+<ParamField path="contentSearch" type="IContentSearch" required>
+  The content search parameters from the launcher or Alexa.
+</ParamField>
+<ParamField path="autoPlay" type="boolean" required>
+  Whether to auto-play content (`true`) or show search results (`false`).
+</ParamField>
+<ParamField path="optionalFields" type="ILaunchContentOptionalFields" required>
+  Additional optional parameters (e.g., `brandName`, `metadata`).
+</ParamField>
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `contentSearch` | `IContentSearch` | The content search parameters. |
-| `autoPlay` | `boolean` | Whether to automatically play the content. |
-| `optionalFields` | `ILaunchContentOptionalFields` | Optional fields including brand name and metadata. |
+### serializePayload / deserializePayload
 
-**Returns:** `ContentLaunchPayload` - The processed launch payload.
+Round-trip a `ContentLaunchPayload` through JSON. Undefined fields are serialized as `null`.
+
+```typescript
+function serializePayload(payload: ContentLaunchPayload): string
+function deserializePayload(json: string): ContentLaunchPayload
+```
 
 ### extractAmznId
 
-Extracts the Amazon ID from content search entities.
+Extracts the first `amzn_id` value from a list of content search entities.
 
 ```typescript
-function extractAmznId(
-  entities: IContentSearchEntity[]
-): string | undefined;
+function extractAmznId(entities: IContentSearchEntity[]): string | undefined
 ```
-
-**Parameters:**
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `entities` | `IContentSearchEntity[]` | Array of content search entities. |
-
-**Returns:** `string | undefined` - The Amazon ID if found, otherwise undefined.
 
 ### determineIntent
 
-Determines the launch intent based on autoPlay flag and content entities.
+Determines the launch intent based on `autoPlay`, `amzn_id`, and entity types.
 
 ```typescript
 function determineIntent(
   autoPlay: boolean,
   amznId: string | undefined,
-  entities: IContentSearchEntity[]
-): LaunchIntent;
+  entities: IContentSearchEntity[],
+): LaunchIntent
 ```
-
-**Parameters:**
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `autoPlay` | `boolean` | Whether autoPlay is enabled. |
-| `amznId` | `string \| undefined` | The Amazon ID if available. |
-| `entities` | `IContentSearchEntity[]` | Array of content search entities. |
-
-**Returns:** `LaunchIntent` - The determined launch intent.
-
-### serializePayload
-
-Serializes a content launch payload to JSON string.
-
-```typescript
-function serializePayload(
-  payload: ContentLaunchPayload
-): string;
-```
-
-**Parameters:**
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `payload` | `ContentLaunchPayload` | The payload to serialize. |
-
-**Returns:** `string` - JSON string representation of the payload.
-
-### deserializePayload
-
-Deserializes a JSON string to a content launch payload.
-
-```typescript
-function deserializePayload(
-  json: string
-): ContentLaunchPayload;
-```
-
-**Parameters:**
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `json` | `string` | The JSON string to deserialize. |
-
-**Returns:** `ContentLaunchPayload` - The deserialized payload.
-
-## Intent determination
-
-The launch intent is determined based on the `autoPlay` flag, presence of an Amazon ID, and entity types:
-
-| autoPlay | amzn_id | Entity type | Intent |
-| --- | --- | --- | --- |
-| `false` | any | any | `search` |
-| `true` | present | `EPISODE` | `playshow` |
-| `true` | present | other | `play` |
-| `true` | absent | any | `search` |
