@@ -1,6 +1,6 @@
 ---
 title: "AudioPlayer V2 API"
-description: "Control playback position with SkipTo and ReplayFrom directives, and read device playback state through the AudioPlayer V2 context."
+description: "Control playback position with SkipTo and ReplayFrom directives, handle seek completion events, and read device playback state through the AudioPlayer V2 context."
 icon: "forward"
 ---
 
@@ -124,6 +124,43 @@ Replays the audio stream starting from an absolute time position.
     ```
   </Tab>
 </Tabs>
+
+## Events
+
+### PlaybackSeekComplete
+
+The `AudioPlayerV2PlaybackSeekCompleteEvent` is sent by the device after a `SkipTo` or `ReplayFrom` seek operation completes. Use this event to confirm the final playback position, which may differ from the requested offset due to keyframe alignment or stream boundaries.
+
+<ResponseField name="seekType" type="string" required>
+  The directive type that triggered the seek. One of `"AudioPlayerV2.SkipTo"` or `"AudioPlayerV2.ReplayFrom"`.
+</ResponseField>
+<ResponseField name="token" type="string" required>
+  The token of the stream that was seeked.
+</ResponseField>
+<ResponseField name="requestedOffsetInMilliseconds" type="number" required>
+  The offset that was originally requested, in milliseconds.
+</ResponseField>
+<ResponseField name="actualOffsetInMilliseconds" type="number" required>
+  The actual offset the player landed on, in milliseconds.
+</ResponseField>
+
+```typescript
+// Handle a PlaybackSeekComplete event
+function handleSeekComplete(event: AudioPlayerV2PlaybackSeekCompleteEvent) {
+  const drift = event.actualOffsetInMilliseconds - event.requestedOffsetInMilliseconds;
+
+  console.log(`Seek ${event.seekType} on stream "${event.token}" complete.`);
+  console.log(`Requested: ${event.requestedOffsetInMilliseconds}ms, Actual: ${event.actualOffsetInMilliseconds}ms`);
+
+  if (Math.abs(drift) > 1000) {
+    console.warn(`Seek landed ${drift}ms from the requested position.`);
+  }
+}
+```
+
+<Info>
+  The actual offset may differ from the requested offset because the player snaps to the nearest keyframe in the audio stream. Always use `actualOffsetInMilliseconds` when updating your UI or internal state after a seek.
+</Info>
 
 ## Device capability detection
 
