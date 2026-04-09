@@ -23,7 +23,8 @@
             "pages": [
               "content-launcher",
               "media-controls",
-              "audioplayer-v2"
+              "audioplayer-v2",
+              "videoapp"
             ]
           },
           {

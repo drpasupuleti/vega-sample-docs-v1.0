@@ -1,0 +1,81 @@
+---
+title: "VideoApp launch (deprecated)"
+description: "The VideoApp.Launch directive for full-screen native video playback is deprecated. Migrate to Alexa.Presentation.APL video components."
+icon: "video"
+---
+
+<Warning>
+  **Deprecated** — The `VideoApp.Launch` directive is deprecated. Use [Alexa.Presentation.APL](https://developer.amazon.com/en-US/docs/alexa/alexa-presentation-language/apl-video.html) video components instead. `VideoApp.Launch` will be removed in a future release.
+</Warning>
+
+## Overview
+
+The `VideoApp.Launch` directive plays full-screen native video on screen-capable Alexa devices (Echo Show, Fire TV). Unlike APL video components, it takes over the entire screen for media playback.
+
+This directive is now deprecated. New integrations should use `Alexa.Presentation.APL` video components, which provide richer layout control and are actively maintained.
+
+## When to migrate
+
+Migrate if your skill currently sends `VideoApp.Launch` directives to play video. The replacement is the APL `Video` component, which renders video within an APL document and supports custom transport controls, overlays, and responsive layouts.
+
+## Previous usage
+
+The directive accepted one or more HTTPS video source URLs and optional metadata:
+
+```typescript
+import { createVideoAppLaunchDirective } from "alexa-apl-interface";
+
+// Deprecated — do not use in new integrations
+const directive = createVideoAppLaunchDirective(
+  "https://example.com/video.mp4",
+  {
+    title: "My Video",
+    subtitle: "Episode 1",
+    offsetInMilliseconds: 0,
+  }
+);
+```
+
+## Migration to APL video components
+
+Replace `VideoApp.Launch` with an `Alexa.Presentation.APL.RenderDocument` directive that contains a `Video` component:
+
+```json
+{
+  "type": "Alexa.Presentation.APL.RenderDocument",
+  "document": {
+    "type": "APL",
+    "version": "2024.3",
+    "mainTemplate": {
+      "items": [
+        {
+          "type": "Video",
+          "width": "100vw",
+          "height": "100vh",
+          "autoplay": true,
+          "source": [
+            {
+              "url": "https://example.com/video.mp4",
+              "description": "My Video — Episode 1"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+```
+
+<Info>
+  APL video components give you full control over the playback UI, including custom transport controls, overlays, and responsive layouts that adapt to different screen sizes.
+</Info>
+
+## Key differences
+
+| Feature | VideoApp.Launch | APL Video component |
+|---|---|---|
+| Screen mode | Full-screen takeover | Embedded in APL layout |
+| Transport controls | Native device controls | Custom or built-in APL controls |
+| Layout flexibility | None | Full APL layout support |
+| Overlays and metadata | Title and subtitle only | Any APL component |
+| Status | **Deprecated** | Actively maintained |
