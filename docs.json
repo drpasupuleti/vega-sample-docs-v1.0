@@ -22,7 +22,8 @@
             "group": "APIs",
             "pages": [
               "content-launcher",
-              "media-controls"
+              "media-controls",
+              "audioplayer-v2"
             ]
           },
           {

@@ -1,0 +1,208 @@
+---
+title: "AudioPlayer V2 API"
+description: "Control playback position with SkipTo and ReplayFrom directives, and read device playback state through the AudioPlayer V2 context."
+icon: "forward"
+---
+
+## Overview
+
+The AudioPlayer V2 API extends the standard AudioPlayer interface with playback position control. It introduces two directives for jumping to or replaying from a specific time position in an audio stream, along with a context object that reports the current playback state on V2-capable devices.
+
+Use AudioPlayer V2 when you need to:
+
+- Skip to a specific timestamp in a playing audio stream
+- Replay audio from an earlier position
+- Read the current playback offset and activity state from the device
+
+<Info>
+  AudioPlayer V2 builds on top of the standard AudioPlayer interface. You still use standard AudioPlayer directives (`Play`, `Stop`, `ClearQueue`) for stream management. V2 adds position control and richer device context for the active stream.
+</Info>
+
+## Context
+
+The `AudioPlayerV2Context` is included in the request context when the device supports AudioPlayer V2. Use it to determine the current playback state before sending position control directives.
+
+<ResponseField name="token" type="string">
+  The token of the currently active V2 stream, if any.
+</ResponseField>
+<ResponseField name="offsetInMilliseconds" type="number">
+  Current playback offset in milliseconds.
+</ResponseField>
+<ResponseField name="playerActivity" type="string">
+  Current player activity state. One of `IDLE`, `PLAYING`, `PAUSED`, `STOPPED`, or `FINISHED`.
+</ResponseField>
+<ResponseField name="supportsSeek" type="boolean">
+  Whether the device supports seek operations on the current stream.
+</ResponseField>
+
+```typescript
+// Read the AudioPlayer V2 context from an incoming request
+const v2Context: AudioPlayerV2Context = request.context.AudioPlayerV2;
+
+if (v2Context?.playerActivity === "PLAYING" && v2Context.supportsSeek) {
+  // Safe to send SkipTo or ReplayFrom directives
+  const currentOffset = v2Context.offsetInMilliseconds ?? 0;
+}
+```
+
+<Warning>
+  Always check that `supportsSeek` is `true` before sending `SkipTo` or `ReplayFrom` directives. Not all V2-capable devices support seek on every stream type.
+</Warning>
+
+## Directives
+
+### SkipTo
+
+Jumps playback to an absolute time position in the currently playing audio stream.
+
+<ResponseField name="type" type="string" required>
+  Always `"AudioPlayerV2.SkipTo"`.
+</ResponseField>
+<ResponseField name="token" type="string" required>
+  The opaque token identifying the audio stream.
+</ResponseField>
+<ResponseField name="offsetInMilliseconds" type="number" required>
+  The absolute target time position in milliseconds. Must be non-negative.
+</ResponseField>
+
+<Tabs>
+  <Tab title="Factory function">
+    ```typescript
+    import { createAudioPlayerV2SkipToDirective } from "vega-sample-package";
+
+    const directive = createAudioPlayerV2SkipToDirective(
+      "episode-42",  // token identifying the stream
+      120000         // skip to 2 minutes
+    );
+    ```
+  </Tab>
+  <Tab title="Builder pattern">
+    ```typescript
+    import { AudioPlayerV2SkipToDirectiveBuilder } from "vega-sample-package";
+
+    const directive = new AudioPlayerV2SkipToDirectiveBuilder()
+      .setToken("episode-42")
+      .setOffsetInMilliseconds(120000)
+      .build();
+    ```
+  </Tab>
+</Tabs>
+
+### ReplayFrom
+
+Replays the audio stream starting from an absolute time position.
+
+<ResponseField name="type" type="string" required>
+  Always `"AudioPlayerV2.ReplayFrom"`.
+</ResponseField>
+<ResponseField name="token" type="string" required>
+  The opaque token identifying the audio stream.
+</ResponseField>
+<ResponseField name="offsetInMilliseconds" type="number" required>
+  The absolute time position in milliseconds to replay from. Must be non-negative.
+</ResponseField>
+
+<Tabs>
+  <Tab title="Factory function">
+    ```typescript
+    import { createAudioPlayerV2ReplayFromDirective } from "vega-sample-package";
+
+    const directive = createAudioPlayerV2ReplayFromDirective(
+      "episode-42",  // token identifying the stream
+      60000          // replay from 1 minute
+    );
+    ```
+  </Tab>
+  <Tab title="Builder pattern">
+    ```typescript
+    import { AudioPlayerV2ReplayFromDirectiveBuilder } from "vega-sample-package";
+
+    const directive = new AudioPlayerV2ReplayFromDirectiveBuilder()
+      .setToken("episode-42")
+      .setOffsetInMilliseconds(60000)
+      .build();
+    ```
+  </Tab>
+</Tabs>
+
+## Device capability detection
+
+Before sending AudioPlayer V2 directives, check that the device supports the V2 interface:
+
+```typescript
+import { supportsAudioPlayerV2 } from "vega-sample-package";
+
+if (supportsAudioPlayerV2(request)) {
+  // Device supports AudioPlayer V2 — safe to send SkipTo / ReplayFrom
+}
+```
+
+## Builder methods
+
+Both `AudioPlayerV2SkipToDirectiveBuilder` and `AudioPlayerV2ReplayFromDirectiveBuilder` share the same API:
+
+| Method | Description |
+|--------|-------------|
+| `setToken(token)` | Set the opaque token identifying the audio stream. Required. |
+| `setOffsetInMilliseconds(offset)` | Set the absolute target time position in milliseconds. Must be non-negative. Defaults to `0`. |
+| `build()` | Returns the directive object. Throws if token is missing or offset is negative. |
+
+## Time conversion helpers
+
+Convenience functions for converting human-readable time units to milliseconds:
+
+```typescript
+import { secondsToMilliseconds, minutesToMilliseconds } from "vega-sample-package";
+
+secondsToMilliseconds(90);  // 90000
+minutesToMilliseconds(2);   // 120000
+```
+
+<Warning>
+  Both helpers throw an error if the input value is negative.
+</Warning>
+
+## Example: context-aware skip
+
+This example reads the AudioPlayer V2 context to determine the current playback position, then skips forward by 30 seconds:
+
+```typescript
+import {
+  supportsAudioPlayerV2,
+  createAudioPlayerV2SkipToDirective,
+  secondsToMilliseconds,
+} from "vega-sample-package";
+
+function handleSkipForward(request: any) {
+  if (!supportsAudioPlayerV2(request)) {
+    return { directives: [] };
+  }
+
+  const v2Context = request.context.AudioPlayerV2;
+
+  if (!v2Context?.supportsSeek || v2Context.playerActivity !== "PLAYING") {
+    return { directives: [] };
+  }
+
+  const currentOffset = v2Context.offsetInMilliseconds ?? 0;
+  const skipAmount = secondsToMilliseconds(30);
+
+  return {
+    directives: [
+      createAudioPlayerV2SkipToDirective(v2Context.token, currentOffset + skipAmount),
+    ],
+  };
+}
+```
+
+## Validation
+
+Both builders and factory functions validate inputs at build time:
+
+```typescript
+// Throws: "AudioPlayerV2.SkipTo requires a token. Call setToken() first."
+new AudioPlayerV2SkipToDirectiveBuilder().build();
+
+// Throws: "offsetInMilliseconds must be non-negative (got -1000)"
+createAudioPlayerV2SkipToDirective("my-token", -1000);
+```
